@@ -131,7 +131,7 @@ function createStage() {
   texture[0] = textureLoader.load("../textures/img_stone_diffuse.jpg");
   normal[0] = textureLoader.load("../textures/img_stone_normal.jpg");
   texture[1] = textureLoader.load("../textures/img_pillar_diffuse.jpg");
-  normal[1] = textureLoader.load("../textures/img_pillaar_normal.jpg");
+  normal[1] = textureLoader.load("../textures/img_pillar_normal.jpg");
   texture[2] = textureLoader.load("../textures/img_crate_diffuse.jpg");
   normal[2] = textureLoader.load("../textures/img_crate_normal.jpg");
   const wStage = 13;
