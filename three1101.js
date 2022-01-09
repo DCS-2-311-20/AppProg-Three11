@@ -1,6 +1,5 @@
 //
-// 応用プログラミング 課題14 (three1101.js)
-// $Id$
+// 応用プログラミング 課題12 (three1101.js)  G084002020 拓殖太郎
 //
 "use strict"; // 厳格モード
 
@@ -154,8 +153,8 @@ function createBall() {
   const mass = 2;
 
   // 描画のための設定
-  const ballDiffuseMap = textureLoader.load("../textures/img_ball_diffuse.jpg");
-  const ballNormalMap = textureLoader.load("../textures/img_ball_normal.png");
+  const ballDiffuseMap = textureLoader.load("textures/img_ball_diffuse.jpg");
+  const ballNormalMap = textureLoader.load("textures/img_ball_normal.jpg");
   ball = new THREE.Mesh(
     new THREE.SphereBufferGeometry(radius, 32, 32),
     new THREE.MeshPhongMaterial({specular:0x808000})
@@ -208,7 +207,17 @@ function gameReset() {
 function updatePhysics(deltaTime) {
   physicsWorld.stepSimulation(deltaTime, 10);
   // 物理演算の結果を描画に反映させる
-
+  rigidBodies.forEach( (objThree) => {
+    const objAmmo = objThree.userData.physicsBody;
+    const ms = objAmmo.getMotionState();
+    if ( ms ) {
+      ms.getWorldTransform(tmpTrans);
+      const pos = tmpTrans.getOrigin();
+      const qua = tmpTrans.getRotation();
+      objThree.position.set(pos.x(), pos.y(), pos.z());
+      objThree.quaternion.set(qua.x(), qua.y(), qua.z(), qua.w());
+    }
+  })
   if (ball.position.y < -100) {
     gameReset();
   }
