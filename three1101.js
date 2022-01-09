@@ -80,8 +80,9 @@ function setupGraphics() {
   renderer.shadowMap.enabled = true;
 }
 
+// ステージを構成するための箱
 function createBox( pos, texture, normal, mass) {
-  // 描画のための設定
+  // 箱の描画のための設定
   const box = new THREE.Mesh(
     new THREE.BoxBufferGeometry(1, 1, 1),
     new THREE.MeshPhongMaterial()
@@ -96,10 +97,28 @@ function createBox( pos, texture, normal, mass) {
   box.receiveShadow = true;
   stage.add(box);
 
-  // 物理演算のための設定
+  // 箱の物理演算のための設定
+  const transform = new Ammo.btTransform();
+  transform.setIdentity();
+  transform.setOrigin(new Ammo.btVector3(
+    pos.x, pos.y, pos.z
+  ));
+
+  const motionState
+   = new Ammo.btDefaultMotionState(transform);
+  const colShape
+   = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
+  const localInertia = new Ammo.btVector3(0, 0, 0);
+  colShape.calculateLocalInertia(mass, localInertia);
+  const rbInfo = new Ammo.btRigidBodyConstructionInfo(
+    mass, motionState, colShape, localInertia);
+  const body = new Ammo.btRigidBody(rbInfo);
+  body.setActivationState( STATE.DISABLE_DEACTIVATION );
+  body.setCollisionFlags( FLAGS.CF_KINEMATIC_OBJECT );
+  physicsWorld.addRigidBody(body);
 
   // 描画設定と物理設定の関連付け
-
+  box.userData.physicsBody = body;
 }
 
 function createStage() {
@@ -127,12 +146,12 @@ function createStage() {
   const pos = {};
   const texture = [];
   const normal = [];
-  texture[0] = textureLoader.load("../textures/img_stone_diffuse.jpg");
-  normal[0] = textureLoader.load("../textures/img_stone_normal.jpg");
-  texture[1] = textureLoader.load("../textures/img_pillar_diffuse.jpg");
-  normal[1] = textureLoader.load("../textures/img_pillar_normal.jpg");
-  texture[2] = textureLoader.load("../textures/img_crate_diffuse.jpg");
-  normal[2] = textureLoader.load("../textures/img_crate_normal.jpg");
+  texture[0] = textureLoader.load("textures/img_stone_diffuse.jpg");
+  normal[0] = textureLoader.load("textures/img_stone_normal.jpg");
+  texture[1] = textureLoader.load("textures/img_pillar_diffuse.jpg");
+  normal[1] = textureLoader.load("textures/img_pillar_normal.jpg");
+  texture[2] = textureLoader.load("textures/img_crate_diffuse.jpg");
+  normal[2] = textureLoader.load("textures/img_crate_normal.jpg");
   const wStage = 13;
   const dStage = 13;
   for (let i = 0; i < wStage; i++) {
@@ -152,7 +171,7 @@ function createBall() {
   const quat = {x: 0, y: 0, z: 0, w: 1};
   const mass = 2;
 
-  // 描画のための設定
+  // ボール描画のための設定
   const ballDiffuseMap = textureLoader.load("textures/img_ball_diffuse.jpg");
   const ballNormalMap = textureLoader.load("textures/img_ball_normal.jpg");
   ball = new THREE.Mesh(
@@ -166,7 +185,7 @@ function createBall() {
   ball.receiveShadow = true;
   scene.add(ball);
 
-  // 物理演算のための設定
+  // ボールの物理演算のための設定
   const transform = new Ammo.btTransform();
   transform.setIdentity();
   transform.setOrigin(new Ammo.btVector3(
@@ -277,7 +296,7 @@ function start() {
   tmpTrans = new Ammo.btTransform();
   setupPhysicsWorld();
   setupGraphics();
-  //createStage();
+  createStage();
   createBall();
   renderFrame();
 }
