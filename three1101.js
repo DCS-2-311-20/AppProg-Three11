@@ -50,7 +50,7 @@ function setupGraphics() {
   scene.background = new THREE.Color(0x204060);
 
   camera = new THREE.PerspectiveCamera(60,
-    0.5 * window.innerWidth / window.innerHeight, 0.3, 1000);
+    window.innerWidth / window.innerHeight, 0.3, 1000);
 
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
   scene.add(ambientLight);
@@ -72,8 +72,8 @@ function setupGraphics() {
   renderer = new THREE.WebGLRenderer({antialias: true});
   renderer.setClearColor(0x204060);
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(0.5 * window.innerWidth, window.innerHeight);
-  document.getElementById("WebGL-output1").appendChild(renderer.domElement);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.getElementById("WebGL-output").appendChild(renderer.domElement);
   renderer.shadowMap.enabled = true;
 }
 
