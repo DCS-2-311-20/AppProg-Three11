@@ -5,7 +5,9 @@
 
 let scene;
 let camera;
+let camera2;
 let renderer;
+let renderer2;
 let clock;
 let rigidBodies = [];
 let ball;
@@ -23,7 +25,7 @@ let dispatcher;
 let overlappingPairCache;
 let solver;
 
-const rollSpeed = 0.03;
+const rollSpeed = 0.02;
 const ballPosition = new THREE.Vector3(-2, 10, 4);
 const cameraPosition = new THREE.Vector3(0, 6, 14);
 //const cameraPosition = new THREE.Vector3(0, 6, 30);
@@ -42,7 +44,7 @@ function setupPhysicsWorld() {
   overlappingPairCache = new Ammo.btDbvtBroadphase();
   solver = new Ammo.btSequentialImpulseConstraintSolver();
   physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, overlappingPairCache);
-  physicsWorld.setGravity(new Ammo.btVector3(0, -9.8, 0));
+  physicsWorld.setGravity(new Ammo.btVector3(0, -1, 0));
 }
 
 // 描画空間の設定
@@ -53,12 +55,12 @@ function setupGraphics() {
   scene.background = new THREE.Color(0x204060);
 
   camera = new THREE.PerspectiveCamera(60,
-    window.innerWidth / window.innerHeight, 0.3, 1000);
-  camera.position.copy(cameraPosition);
-  camera.lookAt(0, 0, 0);
+    0.5 * window.innerWidth / window.innerHeight, 0.3, 1000);
 
-  //camera2 = new THREE.PerspectiveCamera(60,
-  //  window.innerWidth / (window.innerHeight*2), 0.3, 1000);
+  camera2 = new THREE.PerspectiveCamera(60,
+    0.5 * window.innerWidth / window.innerHeight, 0.3, 1000);
+  camera2.position.copy(cameraPosition);
+  camera2.lookAt(0, 0, 0);
 
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
   scene.add(ambientLight);
@@ -80,9 +82,16 @@ function setupGraphics() {
   renderer = new THREE.WebGLRenderer({antialias: true});
   renderer.setClearColor(0x204060);
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.getElementById("WebGL-output").appendChild(renderer.domElement);
+  renderer.setSize(0.5 * window.innerWidth, window.innerHeight);
+  document.getElementById("WebGL-output1").appendChild(renderer.domElement);
   renderer.shadowMap.enabled = true;
+
+  renderer2 = new THREE.WebGLRenderer({antialias: true});
+  renderer2.setClearColor(0x204060);
+  renderer2.setPixelRatio(window.devicePixelRatio);
+  renderer2.setSize(0.5 * window.innerWidth, window.innerHeight);
+  document.getElementById("WebGL-output2").appendChild(renderer2.domElement);
+  renderer2.shadowMap.enabled = true;
 }
 
 // ステージを構成するための箱
@@ -188,7 +197,7 @@ function createStage() {
 function createBall() {
   const radius = 0.4;
   const quat = {x: 0, y: 0, z: 0, w: 1};
-  const mass = 2;
+  const mass = 1.0;
 
   // ボール描画のための設定
   const ballDiffuseMap = textureLoader.load("textures/img_ball_diffuse.jpg");
@@ -218,7 +227,7 @@ function createBall() {
   const colShape
    = new Ammo.btSphereShape(radius, 32, 32);
   const localInertia = new Ammo.btVector3(0, 0, 0);
-  colShape.calculateLocalInertia(mass, localInertia);
+  colShape.calculateLocalInertia(0.2 * mass, localInertia);
   const rbInfo = new Ammo.btRigidBodyConstructionInfo(
     mass, motionState, colShape, localInertia);
   const body = new Ammo.btRigidBody(rbInfo);
@@ -286,13 +295,39 @@ function tilt(delta) {
     }
   })
 }
-// 回転ベクトリの設定
+// 回転ベクトルの設定
 const moveState = { pitchUp: 0, pitchDown: 0, rollLeft: 0, rollRight: 0 };
 const rotationVector = new THREE.Vector3(0, 0, 0);
 function updateRotationVector() {
   rotationVector.x = ( - moveState.pitchUp + moveState.pitchDown );
   rotationVector.z = ( - moveState.rollLeft + moveState.rollRight );
 }
+
+// マウス入力処理
+window.addEventListener("mousemove", (event) => {
+  const mouse = new THREE.Vector2();
+  mouse.x = event.clientX / window.innerWidth;
+  mouse.y = event.clientY / window.innerHeight;
+  console.log(mouse.x);
+  moveState.rollLeft = 0;
+  moveState.rollRight = 0;
+  moveState.pitchUp = 0;
+  moveState.pitchDown = 0;
+  if ( 0 < mouse.x && mouse.x < 0.21 ) {
+    moveState.rollRight = 0.5;
+  }
+  else if ( 0.29 < mouse.x && mouse.x < 0.5 ) {
+    moveState.rollLeft = 0.5;
+  }
+  if ( 0 < mouse.y && mouse.y < 0.46) {
+    moveState.pitchUp = 0.5;
+  }
+  else if ( 0.54 < mouse.y && mouse.y < 1.0 ) {
+    moveState.pitchDown = 0.5;
+  }
+  updateRotationVector();
+});
+
 // キー入力処理
 window.addEventListener("keydown", (event) => {
   if ( event.altKey ) {
@@ -333,6 +368,7 @@ function renderFrame() {
   updatePhysics(delta);
   updateCamera();
   renderer.render(scene, camera);
+  renderer2.render(scene, camera2);
   requestAnimationFrame(renderFrame);
 }
 
