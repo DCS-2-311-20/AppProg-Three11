@@ -51,7 +51,9 @@ function setupGraphics() {
 
   camera = new THREE.PerspectiveCamera(60,
     window.innerWidth / window.innerHeight, 0.3, 1000);
-
+  camera.position.copy(cameraPosition);
+  camera.lookAt(0, 0, 0);
+  
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
   scene.add(ambientLight);
 
@@ -253,7 +255,6 @@ function renderFrame() {
   updatePhysics(delta); // 物理演算
   updateCamera(); // カメラの移動
   renderer.render(scene, camera); // 描画
-  renderer2.render(scene, camera2); // 第二画面の描画
   requestAnimationFrame(renderFrame); // 次フレームの描画予約
 }
 
