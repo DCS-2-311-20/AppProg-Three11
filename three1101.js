@@ -25,8 +25,10 @@ let solver;
 
 const rollSpeed = 0.03;
 const ballPosition = new THREE.Vector3(-2, 10, 4);
-//const cameraPosition = new THREE.Vector3(0, 6, 14);
-const cameraPosition = new THREE.Vector3(0, 6, 30);
+const cameraPosition = new THREE.Vector3(0, 6, 14);
+//const cameraPosition = new THREE.Vector3(0, 6, 30);
+const followCameraPosition = new THREE.Vector3();
+followCameraPosition.copy(ballPosition);
 
 const FLAGS = {CF_KINEMATIC_OBJECT: 2};
 const STATE = {DISABLE_DEACTIVATION: 4};
@@ -54,6 +56,9 @@ function setupGraphics() {
     window.innerWidth / window.innerHeight, 0.3, 1000);
   camera.position.copy(cameraPosition);
   camera.lookAt(0, 0, 0);
+
+  //camera2 = new THREE.PerspectiveCamera(60,
+  //  window.innerWidth / (window.innerHeight*2), 0.3, 1000);
 
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
   scene.add(ambientLight);
@@ -122,7 +127,6 @@ function createBox( pos, texture, normal, mass) {
 }
 
 function createStage() {
-  /*
   const stageMap = [
     [ 2,2,0,0,0,0,0,0,0,0,0,0,0,2,2 ],
     [ 2,1,1,1,1,1,1,1,1,1,1,1,1,1,2 ],
@@ -140,7 +144,6 @@ function createStage() {
     [ 2,1,1,1,1,1,1,1,1,1,1,1,1,1,2 ],
     [ 2,2,0,0,0,0,0,0,0,0,0,0,0,2,2 ],
   ]
-  */
   stage = new THREE.Group();
   stageQuaternion = new THREE.Quaternion(0, 0, 0, 1);
   const pos = {};
@@ -152,14 +155,30 @@ function createStage() {
   normal[1] = textureLoader.load("textures/img_pillar_normal.jpg");
   texture[2] = textureLoader.load("textures/img_crate_diffuse.jpg");
   normal[2] = textureLoader.load("textures/img_crate_normal.jpg");
-  const wStage = 13;
-  const dStage = 13;
-  for (let i = 0; i < wStage; i++) {
-    for (let j = 0; j < dStage; j++) {
-      pos.x = j - 6;
-      pos.z = i - 6;
-      pos.y = -0.5;
-      createBox(pos, texture[0], normal[0], 30);
+  for (let i = 0; i < stageMap.length; i++) {
+    for (let j = 0; j < stageMap[i].length; j++) {
+      pos.x = j - (stageMap[i].length - 1)/2;
+      pos.z = i - (stageMap.length - 1)/2;
+      switch ( stageMap[i][j] ) {
+      case 0:
+        break;
+      case 1:
+        pos.y = -0.5;
+        createBox(pos, texture[0], normal[0], 30);
+        break;
+      case 2:
+        pos.y = 0.5;
+        createBox(pos, texture[1], normal[1], 30);
+        pos.y = -0.5;
+        createBox(pos, texture[0], normal[0], 30);
+        break;
+      case 3:
+        pos.y = 0.5;
+        createBox(pos, texture[2], normal[2], 30);
+        pos.y = -0.5;
+        createBox(pos, texture[0], normal[0], 30);
+        break;
+      }
     }
   }
   scene.add(stage);
@@ -244,13 +263,37 @@ function updatePhysics(deltaTime) {
 
 // ステージを傾ける処理
 function tilt(delta) {
+  const rotMult = delta * rollSpeed;
+  tmpQuat.set(
+    rotationVector.x * rotMult,
+    rotationVector.y * rotMult,
+    rotationVector.z * rotMult, 1
+  ).normalize();
+  stage.quaternion.multiply(tmpQuat);
+  stage.rotation.setFromQuaternion(stage.quaternion);
+
+  stage.children.forEach( (box) => {
+    box.getWorldPosition(tmpPos);
+    box.getWorldQuaternion(tmpQuat);
+    const ms = box.userData.physicsBody.getMotionState();
+    if ( ms ) {
+      ammoTmpPos.setValue(tmpPos.x, tmpPos.y, tmpPos.z);
+      ammoTmpQuat.setValue(tmpQuat.x, tmpQuat.y, tmpQuat.z, tmpQuat.w);
+      tmpTrans.setIdentity();
+      tmpTrans.setOrigin(ammoTmpPos);
+      tmpTrans.setRotation(ammoTmpQuat);
+      ms.setWorldTransform(tmpTrans);
+    }
+  })
 }
+// 回転ベクトリの設定
 const moveState = { pitchUp: 0, pitchDown: 0, rollLeft: 0, rollRight: 0 };
 const rotationVector = new THREE.Vector3(0, 0, 0);
 function updateRotationVector() {
   rotationVector.x = ( - moveState.pitchUp + moveState.pitchDown );
   rotationVector.z = ( - moveState.rollLeft + moveState.rollRight );
 }
+// キー入力処理
 window.addEventListener("keydown", (event) => {
   if ( event.altKey ) {
     return;
@@ -276,6 +319,11 @@ window.addEventListener("keyup", (event) => {
 
 // カメラの更新
 function updateCamera() {
+  followCameraPosition.lerp(ball.position, 0.5);
+  followCameraPosition.y = 5;
+  camera.position.copy(followCameraPosition);
+  camera.up.set(0, 1, -1);
+  camera.lookAt(ball.position);
 }
 
 // フレームの描画
